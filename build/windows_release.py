@@ -242,7 +242,8 @@ def main():
             for block in iter(lambda: stream.read(1024 * 1024), b""):
                 digest.update(block)
         lines.append(f"{digest.hexdigest()}  {path.name}\n")
-    (output / "SHA256SUMS.txt").write_text("".join(lines), encoding="ascii")
+    # LF line endings so `shasum -a 256 -c` works on macOS/Linux as well as Windows.
+    (output / "SHA256SUMS.txt").write_text("".join(lines), encoding="ascii", newline="\n")
 
 
 if __name__ == "__main__":

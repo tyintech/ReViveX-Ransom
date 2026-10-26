@@ -548,6 +548,19 @@ def _auto_rows(root, source_id, stage, diagnostic, manifests):
                                 format=entry['kind']), str(state))
 
 
+def _catalog_finished_auto_run(root):
+    """An automatic recovery run started outside the app (command line) has listings but no
+    catalog yet: build it from the run's own files. Nothing is executed or re-run."""
+    request, manifest = root / 'job_request.json', root / 'payload' / 'auto_manifest.json'
+    if not (request.is_file() and manifest.is_file()):
+        return
+    _no_symlinks(request)
+    saved = json.loads(request.read_text(encoding='utf-8'))
+    if saved.get('tool') != 'auto' or not Path(saved.get('source', '')).is_file():
+        return
+    collect_results(JobSpec('auto', str(Path(saved['source']).absolute()), str(root), {}), 0)
+
+
 def reopen_workspace(path):
     """Open only a validated local catalog. Never dispatch saved job requests.
 
@@ -564,6 +577,8 @@ def reopen_workspace(path):
     _no_symlinks(root)
     db_path = root / 'catalog.sqlite'
     _no_symlinks(db_path)
+    if not db_path.is_file():
+        _catalog_finished_auto_run(root)
     if not db_path.is_file():
         raise ValueError('Workspace has no recovery catalog')
     with sqlite3.connect(db_path.as_uri()+'?mode=ro', uri=True) as check:

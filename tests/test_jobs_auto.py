@@ -259,3 +259,17 @@ def test_ui_starts_automatic_recovery_and_shows_results(app, window, field, tmp_
     assert window.catalog is not None and window.catalog.count(status='usable') >= 14
     labels = [window.status_filter.itemText(i) for i in range(window.status_filter.count())]
     assert any(label.startswith('可用') for label in labels) and any(label.startswith('未恢复') for label in labels)
+
+
+def test_open_workspace_of_a_command_line_run_builds_its_catalog(field, tmp_path):
+    root, source, _ = field
+    job = tmp_path / 'job'
+    job.mkdir()
+    (job / 'job_request.json').write_text(json.dumps(dict(tool='auto', source=str(source), output=str(job), options={})))
+    AutoRecovery(source, job / 'payload', dict(reserve_mib=1)).run()  # as the worker would, without the app
+    assert not (job / 'catalog.sqlite').exists()
+    catalog = reopen_workspace(job)
+    try:
+        assert catalog.count(status='usable') >= 14 and catalog.count(status='deleted_usable') == 2
+    finally:
+        catalog.close()
