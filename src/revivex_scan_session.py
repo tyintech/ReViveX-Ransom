@@ -36,9 +36,10 @@ def _safe_path(path):
 
 
 def _stat(path):
+    from revivex_source_io import change_time_ns
     s = Path(path).stat()
     return dict(size=s.st_size, mtime_ns=s.st_mtime_ns, ctime_ns=s.st_ctime_ns,
-                device=s.st_dev, inode=s.st_ino)
+                change_ns=change_time_ns(path), device=s.st_dev, inode=s.st_ino)
 
 
 def _options(options):

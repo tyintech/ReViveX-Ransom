@@ -119,9 +119,11 @@ class CompletenessReportingAudit(unittest.TestCase):
 
     def test_carve_worker_sqlite_size_limit_completed_scan_known_partial(self):
         database = self.root / 'large.sqlite'
-        with sqlite3.connect(database) as connection:
+        connection = sqlite3.connect(database)
+        with connection:
             connection.execute('CREATE TABLE data (payload BLOB)')
             connection.execute('INSERT INTO data VALUES (zeroblob(1100000))')
+        connection.close()  # Windows cannot delete an open database file
         source = self.root / 'combined.bin'
         source.write_bytes(png(b'\xff\0\0') + database.read_bytes())
         result = self.job('carve', source, {'max_file_mib': 1})

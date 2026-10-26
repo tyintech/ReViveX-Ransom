@@ -242,7 +242,7 @@ def test_eighty_level_export_preserves_hierarchy_or_reports_path_limit(tmp_path)
         file=next(r for r in report if r.get('record')=='file')
         assert file['original_relative_path']==relative
         if result['recovered']:
-            assert file['output'].endswith(relative)
+            assert file['output'].replace('\\', '/').endswith(relative)  # Windows reports use backslashes
             assert (tmp_path/'export'/file['output']).read_bytes()==b'fixture'
         else:
             assert os.name=='nt'

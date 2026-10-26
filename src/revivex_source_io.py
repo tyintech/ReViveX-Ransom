@@ -58,6 +58,43 @@ def open_source_readonly(path, *, deny_write=True):
     return path.open('rb', buffering=0)
 
 
+def change_time_ns(path):
+    """Last metadata/content change time in ns.
+
+    POSIX: st_ctime. Windows: NTFS ChangeTime from GetFileInformationByHandleEx,
+    because st_ctime there is the creation time and os.utime can restore
+    LastWriteTime after a modification, while ChangeTime cannot be set that way.
+    """
+    if os.name != 'nt':
+        return os.stat(path).st_ctime_ns
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    create = kernel.CreateFileW
+    create.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                       wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+    create.restype = wintypes.HANDLE
+    read_attributes, share_all, open_existing, backup_semantics = 0x80, 0x7, 3, 0x02000000
+    handle = create(str(path), read_attributes, share_all, None, open_existing, backup_semantics, None)
+    if handle in (None, wintypes.HANDLE(-1).value):
+        raise OSError(ctypes.get_last_error(), 'Cannot read file change time', str(path))
+
+    class FileBasicInfo(ctypes.Structure):
+        _fields_ = [('CreationTime', ctypes.c_longlong), ('LastAccessTime', ctypes.c_longlong),
+                    ('LastWriteTime', ctypes.c_longlong), ('ChangeTime', ctypes.c_longlong),
+                    ('FileAttributes', wintypes.DWORD)]
+    info = FileBasicInfo()
+    try:
+        get = kernel.GetFileInformationByHandleEx
+        get.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+        get.restype = wintypes.BOOL
+        if not get(handle, 0, ctypes.byref(info), ctypes.sizeof(info)):  # FileBasicInfo
+            raise OSError(ctypes.get_last_error(), 'Cannot read file change time', str(path))
+    finally:
+        kernel.CloseHandle(handle)
+    return (info.ChangeTime - 116444736000000000) * 100
+
+
 def stat_identity(stat):
     return dict(size=stat.st_size, mtime_ns=stat.st_mtime_ns, ctime_ns=stat.st_ctime_ns,
                 device=stat.st_dev, inode=stat.st_ino)

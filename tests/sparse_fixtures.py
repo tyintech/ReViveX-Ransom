@@ -34,6 +34,21 @@ def _mark_sparse_windows(stream, *, kernel=None, get_osfhandle=None):
         raise unittest.SkipTest(f'Filesystem cannot mark test fixture sparse (Windows error {error}); no extension attempted')
 
 
+def _set_end_of_file_windows(stream, size):
+    import msvcrt
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.SetFilePointerEx.argtypes = [wintypes.HANDLE, ctypes.c_longlong, ctypes.c_void_p, wintypes.DWORD]
+    kernel.SetFilePointerEx.restype = wintypes.BOOL
+    kernel.SetEndOfFile.argtypes = [wintypes.HANDLE]
+    kernel.SetEndOfFile.restype = wintypes.BOOL
+    stream.flush()
+    handle = msvcrt.get_osfhandle(stream.fileno())
+    if not kernel.SetFilePointerEx(handle, size, None, 0) or not kernel.SetEndOfFile(handle):
+        raise unittest.SkipTest(f'Cannot extend sparse fixture (Windows error {ctypes.get_last_error()})')
+    stream.seek(0, 2)
+
+
 def sparse_truncate(stream, size, *, temporary_root):
     """Extend only a small synthetic fixture under a caller-owned temp root.
 
@@ -60,6 +75,8 @@ uses holes. The caller must supply its TemporaryDirectory/pytest tmp_path.
         raise ValueError('Only small newly generated fixtures may be extended')
     if os.name == 'nt':
         _mark_sparse_windows(stream)
+        _set_end_of_file_windows(stream, size)  # CRT truncate() would write zeros, not leave a hole
+        return
     elif os.name != 'posix':
         raise unittest.SkipTest('Sparse fixture extension is unsupported on this OS')
     stream.truncate(size)

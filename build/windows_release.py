@@ -24,7 +24,8 @@ def run(*args: str, **kwargs):
 
 def local_file(value: str) -> Path:
     path = (ROOT / value).resolve()
-    if not path.is_relative_to(ROOT) or not path.is_file():
+    # Compare resolved paths: Windows temp folders may be 8.3 short names (RUNNER~1).
+    if not path.is_relative_to(ROOT.resolve()) or not path.is_file():
         raise ValueError(f"Missing or non-repository file: {value}")
     return path
 
