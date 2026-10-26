@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "revivex-ransom"
+version = "0.2.0"
+description = "Read-only damaged-file analysis and verified data salvage"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "陈涛 alan chen", email = "1315333@qq.com"}]
+dependencies = ["dissect.ntfs==3.16", "dissect.cstruct==4.7", "dissect.util==3.24", "PySide6-Essentials==6.12.0", "shiboken6==6.12.0"]
+
+[project.urls]
+Homepage = "https://www.xtyue.com/"
+Repository = "https://github.com/tyintech/ReViveX-Ransom"
+Issues = "https://github.com/tyintech/ReViveX-Ransom/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["recover_vhdx_files", "revivex_vhdx", "revivex_scan_session", "diagnose_recovery_source", "revivex_info", "revivex_desktop", "revivex_ui", "revivex_ui_text", "revivex_ui_theme", "revivex_jobs", "revivex_catalog", "revivex_ntfs_paths", "analyze_gentlemen_pairs", "carve_verified_formats", "probe_vhdx", "recover_inner", "recover_vhdx_resident", "salvage_zip", "verify_vhdx_recovery", "revivex_auto", "revivex_source_io", "revivex_stage", "revivex_ntfs_evidence", "revivex_evidence", "revivex_block_map", "revivex_block_match", "revivex_volume_model", "revivex_named_extract", "revivex_grading", "revivex_organize", "revivex_rebuild"]

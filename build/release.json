@@ -1,0 +1,44 @@
+{
+  "name": "ReViveX Ransom",
+  "version": "0.2.0",
+  "release_stage": "draft",
+  "publish_commit": null,
+  "entry_point": "src/revivex_desktop.py",
+  "console": false,
+  "data_files": [],
+  "hidden_imports": [
+    "analyze_gentlemen_pairs",
+    "carve_verified_formats",
+    "probe_vhdx",
+    "recover_inner",
+    "recover_vhdx_resident",
+    "salvage_zip",
+    "verify_vhdx_recovery",
+    "revivex_jobs",
+    "revivex_catalog",
+    "revivex_ntfs_paths",
+    "recover_vhdx_files",
+    "revivex_vhdx",
+    "revivex_scan_session",
+    "diagnose_recovery_source",
+    "revivex_auto",
+    "revivex_source_io",
+    "revivex_stage",
+    "revivex_ntfs_evidence",
+    "revivex_evidence",
+    "revivex_block_map",
+    "revivex_block_match",
+    "revivex_volume_model",
+    "revivex_named_extract",
+    "revivex_grading",
+    "revivex_organize",
+    "revivex_rebuild"
+  ],
+  "smoke_args": [
+    "--self-test"
+  ],
+  "platforms": [
+    "windows-x64",
+    "macos-arm64"
+  ]
+}

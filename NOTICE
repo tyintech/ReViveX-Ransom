@@ -1,0 +1,36 @@
+ReViveX Ransom
+Copyright (C) 2026 陈涛 alan chen
+Contact: 1315333@qq.com
+Website: https://www.xtyue.com/
+Source: https://github.com/tyintech/ReViveX-Ransom
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See LICENSE.
+
+Third-party components retain their own copyrights and license terms.
+dissect.ntfs: Dissect Team / Fox-IT, AGPL-3.0-or-later.
+dissect.cstruct and dissect.util: Dissect Team / Fox-IT, Apache-2.0.
+Python and its bundled libraries: Python Software Foundation and their
+respective contributors; see the licenses shipped in the binary package.
+PyInstaller: GPL-2.0-or-later with its bootloader/application-bundling
+exception, plus Apache-2.0 for designated files.
+Qt, PySide6 Essentials and Shiboken6: The Qt Company Ltd and contributors.
+The shipped Qt/PySide6 libraries are used under LGPL-3.0; their original
+license notices and third-party component notices are included in
+third-party-licenses/Qt. Exact library source archives accompany the
+matching release in corresponding-source.zip. These libraries are unmodified.
+You may replace/relink the libraries and reverse engineer for debugging
+modifications as permitted by the LGPL. See QT-LIBRARY-REPLACEMENT.md.
+
+The release build collects original license/copyright/notice files from
+installed distributions under third-party-licenses. Matching dependency
+source archives accompany the application source in the same release.
+
+This project is an independent recovery/analysis utility. No upstream
+project or contributor is represented as endorsing it.

@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.build/
+dist/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+.env.*
+*.key
+*.pem
+# Never commit incident evidence or recovered user data.
+private-inputs/
+recovery-output/
+# Field-incident material (client paths, hosts, source identity): kept locally, never published.
+reports/
+tools/field-probes/
+.DS_Store

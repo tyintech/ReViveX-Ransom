@@ -1,0 +1,143 @@
+name: Test and build Windows and macOS
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ matrix.python }}
+          architecture: x64
+      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pytest tests build -q
+        env:
+          PYTHONPATH: src
+          QT_QPA_PLATFORM: offscreen
+
+  build:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    outputs:
+      stage: ${{ steps.config.outputs.stage }}
+      ready: ${{ steps.config.outputs.ready }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - id: config
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          c = json.loads(Path('build/release.json').read_text())
+          stage = c.get('release_stage', 'none')
+          assert stage in ('none', 'draft', 'publish')
+          ready = bool(c.get('entry_point'))
+          if os.environ['GITHUB_REF'].startswith('refs/tags/'):
+              assert os.environ['GITHUB_REF'] == 'refs/tags/v' + c['version']
+              if stage == 'none': stage = 'draft'
+          if stage != 'none': assert ready, 'Release requires the completed UI'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'stage={stage}\nready={str(ready).lower()}\n')
+      - if: steps.config.outputs.ready == 'true' && steps.config.outputs.stage != 'publish'
+        run: python -m pip install -r requirements-build.txt
+      - if: steps.config.outputs.ready == 'true' && steps.config.outputs.stage != 'publish'
+        run: python build/windows_release.py
+        env:
+          QT_QPA_PLATFORM: offscreen
+      - if: steps.config.outputs.ready == 'true' && steps.config.outputs.stage != 'publish'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-release
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+  test-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-test.txt
+      - run: python -m pytest tests build -q
+        env:
+          PYTHONPATH: src
+          QT_QPA_PLATFORM: offscreen
+
+  build-macos:
+    needs: [test-macos, build]
+    if: github.event_name != 'pull_request' && needs.build.outputs.ready == 'true' && needs.build.outputs.stage != 'publish'
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-build.txt
+      - run: python build/macos_release.py
+        env:
+          QT_QPA_PLATFORM: offscreen
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-release
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    needs: [build, build-macos]
+    if: always() && needs.build.result == 'success' && (needs.build-macos.result == 'success' || needs.build.outputs.stage == 'publish') && needs.build.outputs.ready == 'true' && needs.build.outputs.stage != 'none' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: needs.build.outputs.stage == 'draft'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: windows-release
+          path: dist
+      - if: needs.build.outputs.stage == 'draft'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: macos-release
+          path: dist
+      - run: python build/publish_release.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_STAGE: ${{ needs.build.outputs.stage }}
