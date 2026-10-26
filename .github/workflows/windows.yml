@@ -81,6 +81,7 @@ jobs:
 
   test-macos:
     runs-on: macos-14
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -93,11 +94,14 @@ jobs:
         env:
           PYTHONPATH: src
           QT_QPA_PLATFORM: offscreen
+          # macOS /tmp and /var are symlinks; the tools refuse symlinked paths by design.
+          TMPDIR: ${{ runner.temp }}
 
   build-macos:
     needs: [test-macos, build]
     if: github.event_name != 'pull_request' && needs.build.outputs.ready == 'true' && needs.build.outputs.stage != 'publish'
     runs-on: macos-14
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -109,6 +113,7 @@ jobs:
       - run: python build/macos_release.py
         env:
           QT_QPA_PLATFORM: offscreen
+          TMPDIR: ${{ runner.temp }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-release
