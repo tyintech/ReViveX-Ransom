@@ -84,7 +84,10 @@ def licenses(destination: Path, runtime):
                     found = True
         if not found and name.lower().replace('_', '-') not in ('pyside6-essentials', 'shiboken6'):
             raise RuntimeError(f"No packaged license found for {name}; review before release")
-        (target / "METADATA.txt").write_text(str(dist.metadata), encoding="utf-8")
+        # Copy the metadata file verbatim: str(dist.metadata) re-serialises headers and fails
+        # on long descriptions (dissect.ntfs).
+        raw = dist.read_text("METADATA") or dist.read_text("PKG-INFO") or ""
+        (target / "METADATA.txt").write_text(raw, encoding="utf-8")
     version = f"python{sys.version_info.major}.{sys.version_info.minor}"
     candidates = [Path(sys.base_prefix) / "LICENSE.txt", Path(sys.base_prefix) / "lib" / version / "LICENSE.txt"]
     python_license = next((c for c in candidates if c.is_file()), None)  # Windows, then macOS framework layout
